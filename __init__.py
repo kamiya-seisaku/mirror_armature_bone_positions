@@ -28,7 +28,7 @@ class MirrorRigifyProperties(bpy.types.PropertyGroup):
     ) # type: ignore
     # Target armature property with an eyedropper selector
     target_armature: bpy.props.PointerProperty(
-        name="Target Rigify Armature",
+        # name="Target Rigify Armature",
         type=bpy.types.Object,
         description="Select the target Rigify armature",
         poll=lambda self, obj: obj.type == 'ARMATURE'
@@ -56,8 +56,19 @@ class MirrorRigifyPanel(bpy.types.Panel):
 class MirrorRigify(bpy.types.Operator):
     bl_idname = "object.mirror_rigify"
     bl_label = "Mirror Rigify"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    # Add a class property to track the running state
+    is_running_modal = False
+    is_operation_finished = False
+
+    @classmethod
+    def poll(cls, context):
+        return context.area.type == 'VIEW_3D'
+        # return context.area.type == 'VIEW_3D' and not bpy.types.WindowManager.running_modal_operator
 
     def execute(self, context):
+        is_operation_finished = False
         props = context.scene.mirror_rigify_props
         source_armature = props.source_armature
         target_armature = props.target_armature
@@ -79,12 +90,13 @@ class MirrorRigify(bpy.types.Operator):
         # Define the bone group name
         bone_group_name = "BonesToMove"
 
-        # Check if the bone group already exists and clear it
-        if bone_group_name in target_armature.pose.bone_groups:
-            target_armature.pose.bone_groups.remove(target_armature.pose.bone_groups[bone_group_name])
+        # Check if the bone collection already exists and clear it
+        bone_collection = target_armature.pose.bone_groups.get(bone_group_name)
+        if bone_collection:
+            target_armature.pose.bone_groups.remove(bone_collection)
 
-        # Create a new bone group
-        bone_group = target_armature.pose.bone_groups.new(name=bone_group_name)
+        # Create a new bone collection
+        bone_collection = target_armature.pose.bone_groups.new(name=bone_group_name)
 
         # Define a list of source bones to be mirrored
         source_bones_list = [bone.name for bone in source_armature.data.edit_bones]
@@ -99,8 +111,8 @@ class MirrorRigify(bpy.types.Operator):
                 new_bone.head = source_bone.head
                 new_bone.tail = source_bone.tail
                 new_bone.roll = source_bone.roll
-                # Add the new bone to the bone group
-                bone_group.bones.append(new_bone.name)
+                # Add the new bone to the bone collection
+                bone_collection.bones.append(new_bone.name)
             else:
                 # If the bone exists, update its head, tail, and roll to match the source armature
                 target_bone = target_armature.data.edit_bones[bone_name]
@@ -108,11 +120,31 @@ class MirrorRigify(bpy.types.Operator):
                 target_bone.head = source_bone.head
                 target_bone.tail = source_bone.tail
                 target_bone.roll = source_bone.roll
-                # Add the existing bone to the bone group
-                bone_group.bones.append(target_bone.name)
+                # Add the existing bone to the bone collection
+                bone_collection.bones.append(target_bone.name)
 
         bpy.ops.object.mode_set(mode='OBJECT')
+        is_operation_finished = True
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        if MirrorRigify.is_running_modal:
+            self.report({'WARNING'}, "Mirror Rigify is already running")
+            return {'CANCELLED'}
+        else:
+            MirrorRigify.is_running_modal = True
+            context.window_manager.modal_handler_add(self)
+            return {'RUNNING_MODAL'}
+
+    def modal(self, event, context):
+        # if event.type in {'RIGHTMOUSE', 'ESC'}:
+        #     context.window_manager.running_modal_operator = False
+        #     return {'CANCELLED'}
+        if self.is_operation_finished:
+            MirrorRigify.is_running_modal = False
+            return {'FINISHED'}
+
+        return {'PASS_THROUGH'}
 
 # Register and unregister functions for Blender to hook up the addon
 def register():
@@ -127,5 +159,5 @@ def unregister():
     bpy.utils.unregister_class(MirrorRigify)
     del bpy.types.Scene.mirror_rigify_props
 
-if __name__ == "__init__":
+if __name__ == "__main__":
     register()
