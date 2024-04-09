@@ -90,13 +90,30 @@ class MirrorRigify(bpy.types.Operator):
         # Define the bone group name
         bone_group_name = "BonesToMove"
 
-        # Check if the bone collection already exists and clear it
-        bone_collection = target_armature.pose.bone_groups.get(bone_group_name)
-        if bone_collection:
-            target_armature.pose.bone_groups.remove(bone_collection)
+        # # Check if the bone collection already exists and clear it
+        # bone_collection = target_armature.pose.bone_groups.get(bone_group_name)
+        # if bone_collection:
+        #     target_armature.pose.bone_groups.remove(bone_collection)
 
-        # Create a new bone collection
-        bone_collection = target_armature.pose.bone_groups.new(name=bone_group_name)
+        # # Create a new bone collection
+        # bone_collection = target_armature.pose.bone_groups.new(name=bone_group_name)
+
+        # # Check if the bone collection already exists
+        # bone_collection = next((col for col in target_armature.pose.bone_groups if col.name == bone_group_name), None)
+
+        # # If the bone collection doesn't exist, create it
+        # if bone_collection is None:
+        #     bone_collection = target_armature.pose.bone_groups.new(name=bone_group_name)
+
+        # Access the bone groups through Object Data Properties
+        bone_groups = target_armature.data.bone_groups
+
+        # Check if the bone group already exists
+        bone_group = bone_groups.get(bone_group_name)
+
+        # If the bone group doesn't exist, create it
+        if bone_group is None:
+            bone_group = bone_groups.new(name=bone_group_name)
 
         # Define a list of source bones to be mirrored
         source_bones_list = [bone.name for bone in source_armature.data.edit_bones]
@@ -128,13 +145,16 @@ class MirrorRigify(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        if MirrorRigify.is_running_modal:
-            self.report({'WARNING'}, "Mirror Rigify is already running")
-            return {'CANCELLED'}
-        else:
-            MirrorRigify.is_running_modal = True
-            context.window_manager.modal_handler_add(self)
-            return {'RUNNING_MODAL'}
+        # if MirrorRigify.is_running_modal:
+        #     self.report({'WARNING'}, "Mirror Rigify is already running")
+        #     return {'CANCELLED'}
+        # else:
+        #     MirrorRigify.is_running_modal = True
+        #     context.window_manager.modal_handler_add(self)
+        #     self.execute(context)
+        #     return {'RUNNING_MODAL'}
+        self.execute(context)
+        return {'RUNNING_MODAL'}
 
     def modal(self, event, context):
         # if event.type in {'RIGHTMOUSE', 'ESC'}:
