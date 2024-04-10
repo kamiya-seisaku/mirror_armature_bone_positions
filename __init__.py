@@ -73,10 +73,15 @@ class MirrorRigify(bpy.types.Operator):
         source_armature = props.source_armature
         target_armature = props.target_armature
 
+        source_bones_list = [bone.name for bone in source_armature.data.bones]
+        target_bones_list = [bone.name for bone in target_armature.data.bones]
+
         # Check if both armatures are selected
         if not source_armature or not target_armature:
             self.report({'ERROR'}, "Armatures not found")
             return {'CANCELLED'}
+
+        bone_group = bpy.ops.armature.collection_add()
 
         # Ensure both armatures are in object mode before changes
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -86,37 +91,6 @@ class MirrorRigify(bpy.types.Operator):
         # Perform the mirroring operation
         bpy.context.view_layer.objects.active = target_armature
         bpy.ops.object.mode_set(mode='EDIT')
-
-        # Define the bone group name
-        bone_group_name = "BonesToMove"
-
-        # # Check if the bone collection already exists and clear it
-        # bone_collection = target_armature.pose.bone_groups.get(bone_group_name)
-        # if bone_collection:
-        #     target_armature.pose.bone_groups.remove(bone_collection)
-
-        # # Create a new bone collection
-        # bone_collection = target_armature.pose.bone_groups.new(name=bone_group_name)
-
-        # # Check if the bone collection already exists
-        # bone_collection = next((col for col in target_armature.pose.bone_groups if col.name == bone_group_name), None)
-
-        # # If the bone collection doesn't exist, create it
-        # if bone_collection is None:
-        #     bone_collection = target_armature.pose.bone_groups.new(name=bone_group_name)
-
-        # Access the bone groups through Object Data Properties
-        bone_groups = target_armature.data.bone_groups
-
-        # Check if the bone group already exists
-        bone_group = bone_groups.get(bone_group_name)
-
-        # If the bone group doesn't exist, create it
-        if bone_group is None:
-            bone_group = bone_groups.new(name=bone_group_name)
-
-        # Define a list of source bones to be mirrored
-        source_bones_list = [bone.name for bone in source_armature.data.edit_bones]
 
         for bone_name in source_bones_list:
             # Check if the bone exists in the target armature
@@ -129,7 +103,7 @@ class MirrorRigify(bpy.types.Operator):
                 new_bone.tail = source_bone.tail
                 new_bone.roll = source_bone.roll
                 # Add the new bone to the bone collection
-                bone_collection.bones.append(new_bone.name)
+                # bone_group.bones.append(new_bone.name)
             else:
                 # If the bone exists, update its head, tail, and roll to match the source armature
                 target_bone = target_armature.data.edit_bones[bone_name]
@@ -138,7 +112,7 @@ class MirrorRigify(bpy.types.Operator):
                 target_bone.tail = source_bone.tail
                 target_bone.roll = source_bone.roll
                 # Add the existing bone to the bone collection
-                bone_collection.bones.append(target_bone.name)
+                # bone_group.bones.append(target_bone.name)
 
         bpy.ops.object.mode_set(mode='OBJECT')
         is_operation_finished = True
