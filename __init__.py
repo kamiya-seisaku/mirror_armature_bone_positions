@@ -81,12 +81,18 @@ class MirrorRigify(bpy.types.Operator):
             self.report({'ERROR'}, "Armatures not found")
             return {'CANCELLED'}
 
-        bone_group = bpy.ops.armature.collection_add()
+        # if bpy.ops.armature.collections("TobeMoved"):
+        #     bpy.ops.armature.collection_delete(collection="TobeMoved")
+        bone_collection = bpy.ops.armature.collection_add()
 
         # Ensure both armatures are in object mode before changes
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.view_layer.objects.active = source_armature
         bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.armature.collection_rename(name="TobeMoved")
+        # send armature collection to the top
+        for i in range(0, bpy.ops.armature.collections_count()-1):
+            bpy.ops.armature.collection_move(direction='UP')
 
         # Perform the mirroring operation
         bpy.context.view_layer.objects.active = target_armature
@@ -94,25 +100,26 @@ class MirrorRigify(bpy.types.Operator):
 
         for bone_name in source_bones_list:
             # Check if the bone exists in the target armature
-            if bone_name not in target_armature.data.edit_bones:
-                # If not, create a new bone in the target armature
-                new_bone = target_armature.data.edit_bones.new(name=bone_name)
-                # Set the head, tail, and roll to match the source armature
-                source_bone = source_armature.data.edit_bones[bone_name]
-                new_bone.head = source_bone.head
-                new_bone.tail = source_bone.tail
-                new_bone.roll = source_bone.roll
-                # Add the new bone to the bone collection
-                # bone_group.bones.append(new_bone.name)
+            # target_bone_name = "ORG-"+bone_name
+            target_bone_name = bone_name
+            if target_bone_name not in target_armature.data.edit_bones:
+                # If not, do nothing
+                pass
             else:
                 # If the bone exists, update its head, tail, and roll to match the source armature
-                target_bone = target_armature.data.edit_bones[bone_name]
+                target_bone = target_armature.data.edit_bones[target_bone_name]
                 source_bone = source_armature.data.edit_bones[bone_name]
                 target_bone.head = source_bone.head
                 target_bone.tail = source_bone.tail
                 target_bone.roll = source_bone.roll
-                # Add the existing bone to the bone collection
-                # bone_group.bones.append(target_bone.name)
+                # Assign the selected bone collection to the armature
+                target_bone.select
+                bpy.ops.armature.collection_assign()
+                # rename bone collection
+                
+                # force redraw ui and 3d view
+                bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
 
         bpy.ops.object.mode_set(mode='OBJECT')
         is_operation_finished = True
