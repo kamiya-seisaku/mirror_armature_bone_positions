@@ -89,7 +89,7 @@ class MirrorRigify(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.view_layer.objects.active = source_armature
         bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.armature.collection_rename(name="TobeMoved")
+        # bpy.ops.armature.collection_rename(name="TobeMoved")
         # send armature collection to the top
         for i in range(0, bpy.ops.armature.collections_count()-1):
             bpy.ops.armature.collection_move(direction='UP')
@@ -109,9 +109,11 @@ class MirrorRigify(bpy.types.Operator):
                 # If the bone exists, update its head, tail, and roll to match the source armature
                 target_bone = target_armature.data.edit_bones[target_bone_name]
                 source_bone = source_armature.data.edit_bones[bone_name]
-                target_bone.head = source_bone.head
-                target_bone.tail = source_bone.tail
-                target_bone.roll = source_bone.roll
+                # todo: 2024/4/15 bone coords are relative to object origin.  compensattion added. test this. 
+                target_bone.head = source_bone.head + target_armature.location - source_armature.location
+                target_bone.tail = source_bone.tail + target_armature.location - source_armature.location
+                target_bone.roll = source_bone.roll + target_armature.rotation_euler - source_armature.rotation_euler
+
                 # Assign the selected bone collection to the armature
                 target_bone.select
                 bpy.ops.armature.collection_assign()
