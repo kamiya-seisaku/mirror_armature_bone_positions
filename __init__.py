@@ -70,9 +70,18 @@ class MirrorRigify(bpy.types.Operator):
     def execute(self, context):
         is_operation_finished = False
         props = context.scene.mirror_rigify_props
-        source_armature = props.source_armature
+        original_armature = props.source_armature
         target_armature = props.target_armature
 
+        # duplicate original armature to create a copy, source armature and apply transform.
+        # for target apply transform to itself, probably no need to copy beforehand.
+        bpy.ops.object.select_all(action='DESELECT')
+        original_armature.copy()
+        bpy.ops.view3d.pastebuffer()
+        source_armature = bpy.context.selected_objects[-1]
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+        # Todo: 2024/4/17: target needs to have same transform as the source in the end.
         source_bones_list = [bone.name for bone in source_armature.data.bones]
         target_bones_list = [bone.name for bone in target_armature.data.bones]
 
@@ -91,8 +100,8 @@ class MirrorRigify(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='EDIT')
         # bpy.ops.armature.collection_rename(name="TobeMoved")
         # send armature collection to the top
-        for i in range(0, bpy.ops.armature.collections_count()-1):
-            bpy.ops.armature.collection_move(direction='UP')
+        # for i in range(0, bpy.ops.armature.collections_count()-1):
+        #     bpy.ops.armature.collection_move(direction='UP')
 
         # Perform the mirroring operation
         bpy.context.view_layer.objects.active = target_armature
